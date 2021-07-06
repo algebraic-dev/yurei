@@ -3,73 +3,7 @@ module Syntax.Lexer
 import Loc
 import Text.Lexer
 import Text.Lexer.Core
-
--- Just token definition
-
-public export 
-data Tkn 
-  = TknId       String
-  | TknNum      Int
-  | TknStr      String
-  | TknComment  String
-  | TknLPar        
-  | TknRPar       
-  | TknRCurly      
-  | TknLCurly     
-  | TknRSquare    
-  | TknLSquare    
-  | TknWhitespace 
-  | TknLB         
-  | TknDot
-
-public export
-Show Tkn where
-  show (TknId dt)      = "ID: " ++ show dt
-  show (TknNum dt)     = "INT: " ++ show dt
-  show (TknStr dt)     = "STR: " ++ show dt
-  show (TknComment dt) = "COMMENT: " ++ show dt
-  show TknLPar         = "\"(\""
-  show TknRPar         = "\")\""
-  show TknLCurly       = "\"{\""
-  show TknRCurly       = "\"}\""
-  show TknLSquare      = "\"[\""
-  show TknRSquare      = "\"]\""
-  show TknWhitespace   = "WHITESPACE"
-  show TknLB           = "LB"
-  show TknDot          = "\".\""
-
-public export
-Eq Tkn where 
-  (==) (TknId a)  (TknId b)          = a == b
-  (==) (TknNum a) (TknNum b)         = a == b
-  (==) (TknStr a) (TknStr b)         = a == b
-  (==) (TknComment a) (TknComment b) = a == b
-  (==) TknLPar TknLPar             = True
-  (==) TknRPar TknRPar             = True
-  (==) TknRCurly TknRCurly         = True
-  (==) TknLCurly TknLCurly         = True
-  (==) TknRSquare TknRSquare       = True
-  (==) TknLSquare TknLSquare       = True
-  (==) TknWhitespace TknWhitespace = True
-  (==) TknLB TknLB                 = True
-  (==) TknDot TknDot               = True 
-  (==) _ _ = False
-
-public export
-tokenName : Tkn -> String
-tokenName (TknId _)      = "identifier"
-tokenName (TknNum _)     = "int"
-tokenName (TknStr _)      = "string"
-tokenName (TknComment _) = "comment"
-tokenName TknLPar        = "left parenthesis"
-tokenName TknRPar        = "right parenthesis"
-tokenName TknLCurly      = "left curly bracket"
-tokenName TknRCurly      = "right curly bracket"
-tokenName TknLSquare     = "left square bracket"
-tokenName TknRSquare     = "right square bracket"
-tokenName TknWhitespace  = "whitespace"
-tokenName TknLB          = "line break"
-tokenName TknDot         = "dot"
+import Syntax.Tokens
 
 -- The entry point of lexing 
 
@@ -82,28 +16,39 @@ string = (is '"') <+> some (pred (/= '"')) <+> (is '"')
 id : Lexer
 id = some (non (oneOf "; \n\r()[]{}"))
 
-tokenMap : TokenMap Tkn
+tokenMap : TokenMap (Int, Tkn)
 tokenMap = 
-   [
-    (oneOf "\n\r", const TknLB),
-    (digits  , TknNum . cast),
-    (id      , TknId),
-    (is '('  , const TknLPar),
-    (is ')'  , const TknRPar),
-    (is '['  , const TknLSquare),
-    (is ']'  , const TknLSquare),
-    (is '{'  , const TknLCurly),
-    (is '}'  , const TknRCurly),
-    (space   , const TknWhitespace),
-    (comment , TknComment),
-    (string  , TknStr)]
+   map ?kek 
+      [(oneOf "\n\r", const TknLB),
+      (digits  , TknNum . cast),
+      (id      , TknId),
+      (is '('  , const TknLPar),
+      (is ')'  , const TknRPar),
+      (is '['  , const TknLSquare),
+      (is ']'  , const TknLSquare),
+      (is '{'  , const TknLCurly),
+      (is '}'  , const TknRCurly),
+      (space   , const TknWhitespace),
+      (comment , TknComment),
+      (string  , TknStr)]
 
-tokenDataToLoc : TokenData x -> (Loc, x) 
-tokenDataToLoc (MkToken col line c) = (MkLoc line col, c)
+-- It transforms a parser of Tkn to (Int, Tkn). The tkn parameter indicates the 
+-- Length of the string that it's getting.
+
+mapApply : (Lexer, String -> Tkn) -> (Lexer, String -> (Int, Tkn))
+mapApply (rule, func) = (rule, \s => (cast $ length s, func s))
+
+-- The token data for comments are broken. So think twice before using the range for
+-- comments.
+
+tokenDataToLoc : TokenData (Int, Tkn) -> (Range, Tkn) 
+tokenDataToLoc (MkToken col line (len, tkn)) = (MkRange (MkLoc line col) (MkLoc line (col + len)), tkn)
+
+-- The main function that lexes the string to a list of (range,tkn)
 
 public export
-lex : String -> Either Loc (List (Loc, Tkn))
+lex : String -> Either Loc (List (Range, Tkn))
 lex str
   = case lex tokenMap str of
-    (tokens, _, _,   "")   => pure $ map tokenDataToLoc tokens
-    (_, line, column, _) => Left  $ MkLoc line column
+    (tokens, _, _,   "") => Right $ map tokenDataToLoc tokens
+    (_, line, column, _) => Left  $ (MkLoc line column)

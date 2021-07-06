@@ -3,6 +3,8 @@ module Syntax.Parser
 import Modified.Parser
 import Modified.Core
 import Syntax.Lexer
+import Syntax.Tokens
+import Error
 import Loc
 
 -- the type variable "a" means annotation. 
@@ -39,15 +41,40 @@ mutual
 -- Will return in the end a (List (TopLevel Range)).
 
 Parser : Type -> Type
-Parser ty = Grammar Int (Loc, Tkn) True ty
+Parser ty = Grammar GrammarError (Range, Tkn) True ty
 
-termLoc : Tkn -> Parser Loc
-termLoc expected = terminal (ErrorCustom 3)
-     (\(loc, actual) => if actual == expected then Just loc else Nothing)
+-- These are the "primitive" functions to make the parsing 
 
-term : Tkn -> Parser ()
-term expected = terminal (ErrorCustom 2)
-     (\(_, actual) => if actual == expected then Just () else Nothing)
+token : Tkn -> Parser Range
+token expected = terminal 
+  (ErrorCustom . (\(loc, tkn) => Expected loc expected tkn)) 
+  (\(loc, actual) => if actual == expected then Just loc else Nothing)
 
-teste : Parser ()
-teste = fail (ErrorCustom 2)
+keyword : String -> Parser Range
+keyword expected = terminal 
+  (ErrorCustom . (\(loc, tkn) => ExpectedKeyword loc expected tkn)) 
+  (\(loc, actual) => case actual of 
+                      TknId x => if x == expected then Just loc else Nothing
+                      _       => Nothing) 
+
+identifier : Parser (Range, String)
+identifier = terminal 
+  (ErrorCustom . (\(loc, tkn) => ExpectedEmpty loc (TknId "") tkn)) 
+  (\(loc, actual) => case actual of 
+                      TknId x => Just (loc, x)
+                      _       => Nothing) 
+
+integer : Parser (Range, Int)
+integer = terminal 
+  (ErrorCustom . (\(loc, tkn) => ExpectedEmpty loc (TknNum 0) tkn)) 
+  (\(loc, actual) => case actual of 
+                      TknNum x => Just (loc, x)
+                      _       => Nothing) 
+
+string : Parser (Range, String)
+string = terminal 
+  (ErrorCustom . (\(loc, tkn) => ExpectedEmpty loc (TknStr "") tkn)) 
+  (\(loc, actual) => case actual of 
+                      TknStr x => Just (loc, x)
+                      _       => Nothing) 
+

@@ -1,9 +1,9 @@
 module Main 
 
 import Syntax.Lexer
+import Syntax.Parser
 import Loc 
-
-import Syntax.Parser 
+ 
 
 str : String
 str = """
