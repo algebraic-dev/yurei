@@ -5,9 +5,7 @@
 ||| This code is derived from software written by Edwin Brady
 ||| (ecb10@st-andrews.ac.uk).
 
-||| Redistribution and use in source and binary forms, with or without
-||| modification, are permitted provided that the following conditions
-||| are met:
+||| I (Chiyoku) just modified the parser to include custom errors.
 
 module Modified.Core
 
@@ -32,7 +30,7 @@ data ParserError err
 public export
 data Grammar    : (err : Type) -> (tok : Type) -> (consumes : Bool) -> Type -> Type where
      Empty      : (val : ty) -> Grammar err tok False ty
-     Terminal   : (ParserError err) -> (tok -> Maybe a) -> Grammar err tok True a
+     Terminal   : (tok -> ParserError err) -> (tok -> Maybe a) -> Grammar err tok True a
      NextIs     : (ParserError err) -> (tok -> Bool) -> Grammar err tok False tok
      EOF        : Grammar err tok False ()
      Fail       : Bool -> (ParserError err) -> Grammar err tok c ty
@@ -149,7 +147,7 @@ export
 export
 mapToken : (a -> b) -> Grammar err b c ty -> Grammar err a c ty
 mapToken f (Empty val) = Empty val
-mapToken f (Terminal msg g) = Terminal msg (g . f)
+mapToken f (Terminal msg g) = Terminal (msg . f) (g . f)
 mapToken f (NextIs msg g) = SeqEmpty (NextIs msg (g . f)) (Empty . f)
 mapToken f EOF = EOF
 mapToken f (Fail fatal msg) = Fail fatal msg
@@ -183,7 +181,7 @@ peek = nextIs UnrecognizedToken (const True)
 ||| Succeeds if running the predicate on the next token returns Just x,
 ||| returning x. Otherwise fails.
 export
-terminal : (ParserError err) -> (tok -> Maybe a) -> Grammar err tok True a
+terminal : (tok -> ParserError err) -> (tok -> Maybe a) -> Grammar err tok True a
 terminal = Terminal
 
 ||| Always fail with a message
@@ -250,7 +248,7 @@ doParse com (MustWork g) xs =
 doParse com (Terminal err f) [] = Failure com False EndOfInput []
 doParse com (Terminal err f) (x :: xs)
       = maybe
-           (Failure com False err (x :: xs))
+           (Failure com False (err x) (x :: xs))
            (\a => NonEmptyRes com {xs=[]} a xs)
            (f x)
 doParse com EOF [] = EmptyRes com () []

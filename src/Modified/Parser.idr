@@ -5,9 +5,7 @@
 ||| This code is derived from software written by Edwin Brady
 ||| (ecb10@st-andrews.ac.uk).
 
-||| Redistribution and use in source and binary forms, with or without
-||| modification, are permitted provided that the following conditions
-||| are met:
+||| I (Chiyoku) just modified the parser to include custom errors.
 
 module Modified.Parser
 
@@ -26,7 +24,7 @@ export
 match : (Eq k, TokenKind k) =>
         (kind : k) ->
         Grammar err  (Token k) True (TokType kind)
-match kind = terminal UnrecognizedInput $
+match kind = terminal (const UnrecognizedInput) $
   \(Tok kind' text) => if kind' == kind
                           then Just $ tokValue kind text
                           else Nothing
