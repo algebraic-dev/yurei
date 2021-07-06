@@ -24,10 +24,10 @@ export
 match : (Eq k, TokenKind k) =>
         (kind : k) ->
         Grammar err  (Token k) True (TokType kind)
-match kind = terminal (const UnrecognizedInput) $
+match kind = terminal
   \(Tok kind' text) => if kind' == kind
-                          then Just $ tokValue kind text
-                          else Nothing
+                          then Right $ tokValue kind text
+                          else Left $ UnrecognizedInput
 
 ||| Optionally parse a thing, with a default value if the grammar doesn't
 ||| match. May match the empty input.

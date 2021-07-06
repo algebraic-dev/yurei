@@ -30,8 +30,8 @@ data ParserError err
 public export
 data Grammar    : (err : Type) -> (tok : Type) -> (consumes : Bool) -> Type -> Type where
      Empty      : (val : ty) -> Grammar err tok False ty
-     Terminal   : (tok -> ParserError err) -> (tok -> Maybe a) -> Grammar err tok True a
-     NextIs     : (ParserError err) -> (tok -> Bool) -> Grammar err tok False tok
+     Terminal   : (tok -> Either (ParserError err) a) -> Grammar err tok True a
+     NextIs     : (ParserError err) -> (tok -> Bool)  -> Grammar err tok False tok
      EOF        : Grammar err tok False ()
      Fail       : Bool -> (ParserError err) -> Grammar err tok c ty
      Commit     : Grammar err tok False ()
@@ -98,7 +98,7 @@ export
   map f (Empty val)  = Empty (f val)
   map f (Fail fatal msg) = Fail fatal msg
   map f (MustWork g) = MustWork (map f g)
-  map f (Terminal msg g) = Terminal msg (\t => map f (g t))
+  map f (Terminal g) = Terminal (\t => map f (g t))
   map f (Alt x y)    = Alt (map f x) (map f y)
   map f (SeqEat act next)
       = SeqEat act (\val => map f (next val))
@@ -147,7 +147,7 @@ export
 export
 mapToken : (a -> b) -> Grammar err b c ty -> Grammar err a c ty
 mapToken f (Empty val) = Empty val
-mapToken f (Terminal msg g) = Terminal (msg . f) (g . f)
+mapToken f (Terminal g) = Terminal (g . f)
 mapToken f (NextIs msg g) = SeqEmpty (NextIs msg (g . f)) (Empty . f)
 mapToken f EOF = EOF
 mapToken f (Fail fatal msg) = Fail fatal msg
@@ -181,7 +181,7 @@ peek = nextIs UnrecognizedToken (const True)
 ||| Succeeds if running the predicate on the next token returns Just x,
 ||| returning x. Otherwise fails.
 export
-terminal : (tok -> ParserError err) -> (tok -> Maybe a) -> Grammar err tok True a
+terminal : (tok -> Either (ParserError err) a) -> Grammar err tok True a
 terminal = Terminal
 
 ||| Always fail with a message
@@ -245,12 +245,13 @@ doParse com (MustWork g) xs =
       case p' of
            Failure com' _ msg ts => Failure com' True msg ts
            res => res
-doParse com (Terminal err f) [] = Failure com False EndOfInput []
-doParse com (Terminal err f) (x :: xs)
-      = maybe
-           (Failure com False (err x) (x :: xs))
-           (\a => NonEmptyRes com {xs=[]} a xs)
-           (f x)
+doParse com (Terminal f) [] = Failure com False EndOfInput []
+doParse com (Terminal f) (x :: xs) =
+  let res = f x in 
+  case res of 
+    Left err  => Failure com False err (x :: xs)
+    Right res => NonEmptyRes com {xs=[]} res xs
+    
 doParse com EOF [] = EmptyRes com () []
 doParse com EOF (x :: xs)
       = Failure com False ExpectedEndOfInput (x :: xs)
