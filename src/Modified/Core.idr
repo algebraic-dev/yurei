@@ -93,7 +93,7 @@ export
 (<|>) = Alt
 
 ||| Allows the result of a grammar to be mapped to a different value.
-export
+export 
 {c : _} -> Functor (Grammar err tok c) where
   map f (Empty val)  = Empty (f val)
   map f (Fail fatal msg) = Fail fatal msg
@@ -247,11 +247,9 @@ doParse com (MustWork g) xs =
            res => res
 doParse com (Terminal f) [] = Failure com False EndOfInput []
 doParse com (Terminal f) (x :: xs) =
-  let res = f x in 
-  case res of 
+  case f x of 
     Left err  => Failure com False err (x :: xs)
     Right res => NonEmptyRes com {xs=[]} res xs
-    
 doParse com EOF [] = EmptyRes com () []
 doParse com EOF (x :: xs)
       = Failure com False ExpectedEndOfInput (x :: xs)

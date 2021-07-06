@@ -4,13 +4,28 @@ import Loc
 import Syntax.Tokens 
 
 public export
-data GrammarError
-  = NotClosedParenthesis 
-  | Expected Range Tkn Tkn
-  | ExpectedEmpty Range Tkn Tkn
-  | ExpectedKeyword Range String Tkn
+data ExpectType 
+  = ExpectTkn Tkn
+  | ExpectKeyword String
+  | ExpectId
+  | ExpectInt
+  | ExpectStr
 
 public export
-data TypeError
+data BetweenType
+  = Parenthesis
+  | CurlyBrackets
+  | SquareBrackets
+
+public export
+data ReaderError
+  = NotClosed BetweenType
+  | Expected ExpectType Tkn
+
+public export
+data ErrorType
   = LexicalError Range
-  | ParsingError Range GrammarError
+  | ReadingError Range ReaderError
+  | EOF
+  | ExpectedEOF
+  | UnexpectedInternalError

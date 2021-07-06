@@ -55,7 +55,7 @@ public export
 tokenName : Tkn -> String
 tokenName (TknId _)      = "identifier"
 tokenName (TknNum _)     = "int"
-tokenName (TknStr _)      = "string"
+tokenName (TknStr _)     = "string"
 tokenName (TknComment _) = "comment"
 tokenName TknLPar        = "left parenthesis"
 tokenName TknRPar        = "right parenthesis"

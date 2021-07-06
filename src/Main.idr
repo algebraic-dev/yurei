@@ -1,6 +1,7 @@
 module Main 
 
 import Syntax.Lexer
+import Syntax.Reader
 import Syntax.Parser
 import Loc 
  
@@ -30,4 +31,4 @@ str = """
       """ 
 
 main : IO ()
-main = print "Right"
+main = putStrLn "Compiled"

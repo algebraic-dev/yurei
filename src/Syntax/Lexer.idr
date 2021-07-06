@@ -1,6 +1,7 @@
 module Syntax.Lexer
 
 import Loc
+import Error
 import Text.Lexer
 import Text.Lexer.Core
 import Syntax.Tokens
@@ -47,8 +48,10 @@ tokenDataToLoc (MkToken col line (len, tkn)) = (MkRange (MkLoc line col) (MkLoc 
 -- The main function that lexes the string to a list of (range,tkn)
 
 public export
-lex : String -> Either Loc (List (Range, Tkn))
+lex : String -> Either ErrorType (List (Range, Tkn))
 lex str
   = case lex tokenMap str of
     (tokens, _, _,   "") => Right $ map tokenDataToLoc tokens
-    (_, line, column, _) => Left  $ (MkLoc line column)
+    (_, line, column, _) => Left  $ LexicalError (MkRange 
+                                                    (MkLoc line column) 
+                                                    (MkLoc line (column+1)))
