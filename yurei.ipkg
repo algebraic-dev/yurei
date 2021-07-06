@@ -1,0 +1,14 @@
+package yurei
+
+
+modules = 
+   Main
+  ,Loc
+  ,Error
+  ,Syntax.Lexer
+  
+main = Main
+depends = contrib
+
+sourcedir = "src"
+executable = main 
