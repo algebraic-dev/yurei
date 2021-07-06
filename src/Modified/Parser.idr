@@ -1,3 +1,14 @@
+||| Copyright (c) 2020 Edwin Brady
+|||     School of Computer Science, University of St Andrews
+||| All rights reserved.
+
+||| This code is derived from software written by Edwin Brady
+||| (ecb10@st-andrews.ac.uk).
+
+||| Redistribution and use in source and binary forms, with or without
+||| modification, are permitted provided that the following conditions
+||| are met:
+
 module Modified.Parser
 
 import Data.Bool
