@@ -3,14 +3,23 @@ module Syntax.Reader
 import Modified.Parser
 import Syntax.Tokens
 import Error
+import Data.List1
 import Loc
-
+ 
 public export
 data TermExpr 
-  = TList Range TermExpr 
+  = TList Range (List TermExpr) 
   | TStr  Range String 
   | TInt  Range Int 
   | TId   Range String
+
+
+public export
+Show TermExpr where
+  show (TList _ list) = "(" ++ (foldl ((++) . (++ " ")) "" (map show list)) ++ ")"
+  show (TStr _ str)   = "\"" ++ str ++ "\""
+  show (TInt _ n)     = cast n
+  show (TId _ n)      = n
   
 -- Rule type is the entry point of the reader, It receives Locs and Tkns and
 -- Will return in the end a (List (TopLevel Range)).
@@ -59,43 +68,62 @@ string = terminal (\(loc, actual) =>
 
 -- Actual rules for parsing
 
-failClosedPar : BetweenType -> Range -> Rule ()
-failClosedPar between range = fail (error range $ NotClosed between)
+failClosedPar : BetweenType -> Range -> Rule Range
+failClosedPar between range = 
+  fail (error range $ NotClosed between)
 
-between : BetweenType -> Rule Range -> Rule () -> Rule b -> Rule b 
-between betweenErr start end middle = do
-  range <- start
-  res <- middle 
-  (end <|> failClosedPar betweenErr range)
-  pure res
+
+traceRE : IO () -> b -> IO b
+traceRE rule return = do 
+    rule
+    pure return
+
+trace : IO () -> b -> b
+trace thing reg = unsafePerformIO (traceRE thing reg)
 
 mutual
+  call : Rule TermExpr
+  call = do
+    range    <- tknRange TknLPar
+    res      <- many expr
+    endRange <- tknRange TknRPar <|> failClosedPar Parenthesis range
+    pure $ TList (mixRange range endRange) res
+
   list : Rule TermExpr
-  list = 
-    between Parenthesis (tknRange TknLPar) (tkn TknRPar) expr 
+  list = do
+    range    <- tknRange TknLSquare
+    res      <- many expr
+    endRange <- tknRange TknRSquare <|> failClosedPar SquareBrackets range
+    mixedRange <- pure $ mixRange range endRange 
+    pure $ TList mixedRange ((TId mixedRange "list") :: res)
 
   set : Rule TermExpr
-  set = 
-    between CurlyBrackets (tknRange TknLCurly) (tkn TknRCurly) expr 
-
-  square : Rule TermExpr
-  square = 
-    between SquareBrackets (tknRange TknLSquare) (tkn TknRSquare) expr 
+  set = do
+    range    <- tknRange TknLCurly
+    res      <- many expr
+    endRange <- tknRange TknRCurly <|> failClosedPar CurlyBrackets range
+    mixedRange <- pure $ mixRange range endRange 
+    pure $ TList mixedRange ((TId mixedRange "set") :: res)  
 
   expr : Rule TermExpr 
-  expr = list 
-     <|> set 
-     <|> square
-     <|> string
+  expr = string
      <|> identifier
      <|> integer
+     <|> list 
+     <|> call
+     <|> set
+
+  program : Rule (List TermExpr)
+  program = do 
+    res <- forget <$> some call
+    pure res
 
 public export
-readToTerm : List (Range,Tkn) -> Either ErrorType TermExpr
+readToTerm : List (Range,Tkn) -> Either ErrorType (List TermExpr)
 readToTerm ls = 
-  case parse expr ls of 
-    Right (res, []) => Right res 
-    Right (res, _) => Left ExpectedEOF
+  case parse program ls of 
+    Right (res, []) => Right res
+    Right (res, (r, hd) :: _) => Left (ReadingError r $ Expected Unknown hd) 
     Left (ExpectedEndOfInput, _) => Left ExpectedEOF
     Left (EndOfInput, _) => Left EOF 
     Left (ErrorCustom err, _) => Left err

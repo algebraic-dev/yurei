@@ -19,14 +19,14 @@ id = some (non (oneOf "; \n\r()[]{}"))
 
 tokenMap : TokenMap (Int, Tkn)
 tokenMap = 
-   map ?kek 
+   map (\(rule, fun) => (rule, (\s => (cast $ length s, fun s)))) 
       [(oneOf "\n\r", const TknLB),
       (digits  , TknNum . cast),
       (id      , TknId),
       (is '('  , const TknLPar),
       (is ')'  , const TknRPar),
       (is '['  , const TknLSquare),
-      (is ']'  , const TknLSquare),
+      (is ']'  , const TknRSquare),
       (is '{'  , const TknLCurly),
       (is '}'  , const TknRCurly),
       (space   , const TknWhitespace),
@@ -55,3 +55,11 @@ lex str
     (_, line, column, _) => Left  $ LexicalError (MkRange 
                                                     (MkLoc line column) 
                                                     (MkLoc line (column+1)))
+
+public export
+isUseless : Tkn -> Bool
+isUseless tkn = case tkn of 
+                  TknComment x => True
+                  TknWhitespace => True 
+                  TknLB => True 
+                  _ => False

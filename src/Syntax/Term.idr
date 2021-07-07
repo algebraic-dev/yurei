@@ -1,4 +1,4 @@
-module Term 
+module Syntax.Term 
 
 
 mutual 
