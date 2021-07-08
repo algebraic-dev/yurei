@@ -5,6 +5,7 @@ import Error
 import Text.Lexer
 import Text.Lexer.Core
 import Syntax.Tokens
+import Data.String
 
 -- The entry point of lexing 
 
@@ -16,6 +17,9 @@ string = (is '"') <+> some (pred (/= '"')) <+> (is '"')
 
 id : Lexer
 id = some (non (oneOf "\"; \n\r()[]{}"))
+
+trimStartEnd : Int -> Int -> String -> String
+trimStartEnd start end text = strSubstr start ((cast $ length text) - (end + start)) text
 
 tokenMap : TokenMap (Int, Tkn)
 tokenMap = 
@@ -30,8 +34,8 @@ tokenMap =
       (is '{', const TknLCurly),
       (is '}', const TknRCurly),
       (space, const TknWhitespace),
-      (comment, TknComment),
-      (string, TknStr)]
+      (comment, TknComment . (trimStartEnd 1 0)),
+      (string, TknStr . (trimStartEnd 1 1))]
 
 -- It transforms a parser of Tkn to (Int, Tkn). The tkn parameter indicates the 
 -- Length of the string that it's getting.
