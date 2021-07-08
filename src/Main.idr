@@ -7,6 +7,7 @@ import Syntax.Tokens
 import Error
 import Data.List
 import Loc 
+import System.File
 
 main : IO ()
-main = print "Compiled"
+main = print "Hello, World"

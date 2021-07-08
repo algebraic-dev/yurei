@@ -12,8 +12,9 @@ record Range where
 
 public export
 Show Loc where 
-  show (MkLoc col line) = "col: " ++ (show col) ++ ", line: " ++ (show line)
+  show (MkLoc {column, line}) = "col: " ++ (show column) ++ ", line: " ++ (show line)
 
 public export
 mixRange : Range -> Range -> Range
 mixRange (MkRange start _) (MkRange _ end) = (MkRange start end)
+
