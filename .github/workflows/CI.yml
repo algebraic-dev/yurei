@@ -16,25 +16,28 @@ jobs:
         id: cache-step
         with:
           path: ~/.idris2
-          key: ${{ runner.os }}-build-${{ env.IDRISVERSION }}
+          key: ${{ runner.os }}-build-IDRIS0.4.0
           restore-keys: |
-            ${{ runner.os }}-build-${{ env.IDRISVERSION }}
+            ${{ runner.os }}-build-IDRIS0.4.0
             ${{ runner.os }}-build
-      - name: Step 1 - Install Idris2
+      - name: Step 1 - Install ChezScheme
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chezscheme
+      - name: Step 2 - Install Idris2
         if: steps.cache-step.outputs.cache-hit != 'true'
         id: idris
         run: |
-          sudo apt-get install -y chezscheme
           git clone https://github.com/idris-lang/Idris2
           cd Idris2 
           make bootstrap SCHEME=scheme
           make install
-      - name: Step 2 - Checkout
+      - name: Step 3 - Checkout
         id: checkout
         uses: actions/checkout@v2
-      - name: Step 3 - Build Yurei
+      - name: Step 4 - Build Yurei
         run: |
           make install
-      - name: Step 4 - Test
+      - name: Step 5 - Test
         run: |
           make test

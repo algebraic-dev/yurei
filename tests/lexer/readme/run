@@ -1,1 +1,1 @@
-idris2 --no-color -p yurei_api -p contrib --console-width 0 --no-banner Test.idr --exec main
+~/.idris2/bin/idris2 --no-color -p yurei_api -p contrib --console-width 0 --no-banner Test.idr --exec main
