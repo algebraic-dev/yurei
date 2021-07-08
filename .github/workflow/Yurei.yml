@@ -1,0 +1,40 @@
+name: Yurei
+
+on: [push]
+
+env:
+  SCHEME: scheme
+  IDRISVERSION: 0.4.0
+
+jobs:
+  ubuntu-build:
+    name: Ubuntu Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Step 0 - Get Cache
+        uses: actions/cache@v2
+        id: cache-step
+        with:
+          path: ~/.idris2
+          key: ${{ runner.os }}-build-${{ env.IDRISVERSION }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.IDRISVERSION }}
+            ${{ runner.os }}-build
+      - name: Step 1 - Install Idris2
+        if: steps.cache-step.outputs.cache-hit != 'true'
+        id: idris
+        run: |
+          sudo apt-get install -y chezscheme
+          git clone https://github.com/idris-lang/Idris2
+          cd Idris2 
+          make bootstrap SCHEME=scheme
+          make install
+      - name: Step 2 - Checkout
+        id: checkout
+        uses: actions/checkout@v2
+      - name: Step 3 - Build Yurei
+        run: |
+          make install
+      - name: Step 4 - Test
+        run: |
+          make test

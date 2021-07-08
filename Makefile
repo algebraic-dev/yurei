@@ -2,11 +2,12 @@ test:
 	idris2 --build tests/tests.ipkg
 	cd tests && ./build/exec/runtests .
 
-run:
+build:
 	idris2 --build yurei.ipkg
+
+run: build 
 	./build/exec
 
-install:
-	idris2 --build yurei.ipkg
+install: build
 	idris2 --install yurei.ipkg
 	
