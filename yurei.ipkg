@@ -1,14 +1,22 @@
-package yurei
+package yurei_api
 
+authors = "Chiyoku" 
+license = "MIT" 
 
 modules = 
-   Main
-  ,Loc
-  ,Error
-  ,Syntax.Lexer
+    Main
+  , Loc
+  , Error
+  , Syntax.Lexer
+  , Syntax.Parser
+  , Syntax.Reader
+  , Syntax.Term
+  , Syntax.Tokens
+  , Error
+  , Loc 
   
-main = Main
-depends = contrib
+main       = Main
+depends    = contrib
 
-sourcedir = "src"
+sourcedir  = "src"
 executable = main 
