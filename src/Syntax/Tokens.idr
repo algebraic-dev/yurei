@@ -16,7 +16,6 @@ data Tkn
   | TknLSquare    
   | TknWhitespace 
   | TknLB         
-  | TknDot
 
 public export
 Show Tkn where
@@ -32,7 +31,6 @@ Show Tkn where
   show TknRSquare      = "\"]\""
   show TknWhitespace   = "WHITESPACE"
   show TknLB           = "LB"
-  show TknDot          = "\".\""
 
 public export
 Eq Tkn where 
@@ -48,7 +46,6 @@ Eq Tkn where
   (==) TknLSquare TknLSquare       = True
   (==) TknWhitespace TknWhitespace = True
   (==) TknLB TknLB                 = True
-  (==) TknDot TknDot               = True 
   (==) _ _ = False
 
 public export
@@ -65,4 +62,3 @@ tokenName TknLSquare     = "left square bracket"
 tokenName TknRSquare     = "right square bracket"
 tokenName TknWhitespace  = "whitespace"
 tokenName TknLB          = "line break"
-tokenName TknDot         = "dot"
