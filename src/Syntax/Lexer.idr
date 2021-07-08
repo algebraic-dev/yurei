@@ -9,29 +9,29 @@ import Syntax.Tokens
 -- The entry point of lexing 
 
 comment : Lexer
-comment = (is ';') <+> some (pred (/= '\n')) <+> ((is '\n') <|> empty)
+comment = (is ';') <+> some (pred (/= '\n'))
 
 string : Lexer
 string = (is '"') <+> some (pred (/= '"')) <+> (is '"')
 
 id : Lexer
-id = some (non (oneOf "; \n\r()[]{}"))
+id = some (non (oneOf "\"; \n\r()[]{}"))
 
 tokenMap : TokenMap (Int, Tkn)
 tokenMap = 
    map (\(rule, fun) => (rule, (\s => (cast $ length s, fun s)))) 
       [(oneOf "\n\r", const TknLB),
-      (digits  , TknNum . cast),
-      (id      , TknId),
-      (is '('  , const TknLPar),
-      (is ')'  , const TknRPar),
-      (is '['  , const TknLSquare),
-      (is ']'  , const TknRSquare),
-      (is '{'  , const TknLCurly),
-      (is '}'  , const TknRCurly),
-      (space   , const TknWhitespace),
-      (comment , TknComment),
-      (string  , TknStr)]
+      (digits, TknNum . cast),
+      (id    , TknId),
+      (is '(', const TknLPar),
+      (is ')', const TknRPar),
+      (is '[', const TknLSquare),
+      (is ']', const TknRSquare),
+      (is '{', const TknLCurly),
+      (is '}', const TknRCurly),
+      (space, const TknWhitespace),
+      (comment, TknComment),
+      (string, TknStr)]
 
 -- It transforms a parser of Tkn to (Int, Tkn). The tkn parameter indicates the 
 -- Length of the string that it's getting.
@@ -43,7 +43,8 @@ mapApply (rule, func) = (rule, \s => (cast $ length s, func s))
 -- comments.
 
 tokenDataToLoc : TokenData (Int, Tkn) -> (Range, Tkn) 
-tokenDataToLoc (MkToken col line (len, tkn)) = (MkRange (MkLoc line col) (MkLoc line (col + len)), tkn)
+tokenDataToLoc (MkToken line col (len, tkn)) = 
+  (MkRange (MkLoc {column = col, line = line}) (MkLoc {column = col + len, line }), tkn)
 
 -- The main function that lexes the string to a list of (range,tkn)
 
@@ -52,9 +53,8 @@ lex : String -> Either ErrorType (List (Range, Tkn))
 lex str
   = case lex tokenMap str of
     (tokens, _, _,   "") => Right $ map tokenDataToLoc tokens
-    (_, line, column, _) => Left  $ LexicalError (MkRange 
-                                                    (MkLoc line column) 
-                                                    (MkLoc line (column+1)))
+    (_, line, column, res) => Left $ LexicalError (MkRange (MkLoc { column, line }) 
+                                                           (MkLoc { column, line }))
 
 public export
 isUseless : Tkn -> Bool
