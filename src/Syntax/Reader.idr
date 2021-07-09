@@ -12,7 +12,6 @@ data TermExpr
   | TStr  Range String 
   | TInt  Range Int 
   | TId   Range String
-
   
 -- Rule type is the entry point of the reader, It receives Locs and Tkns and
 -- Will return in the end a (List (TopLevel Range)).

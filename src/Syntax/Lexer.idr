@@ -6,6 +6,7 @@ import Text.Lexer
 import Text.Lexer.Core
 import Syntax.Tokens
 import Data.String
+import Data.String.Extra
 
 -- The entry point of lexing 
 
@@ -13,7 +14,7 @@ comment : Lexer
 comment = (is ';') <+> some (pred (/= '\n'))
 
 string : Lexer
-string = (is '"') <+> some (pred (/= '"')) <+> (is '"')
+string = (is '"') <+> some (pred (\s => s /= '"' && s /= '\n')) <+> (is '"')
 
 id : Lexer
 id = some (non (oneOf "\"; \n\r()[]{}"))
@@ -57,8 +58,9 @@ lex : String -> Either ErrorType (List (Range, Tkn))
 lex str
   = case lex tokenMap str of
     (tokens, _, _,   "") => Right $ map tokenDataToLoc tokens
-    (_, line, column, res) => Left $ LexicalError (MkRange (MkLoc { column, line }) 
-                                                           (MkLoc { column, line }))
+    (_, line, column, res) => Left $ LexicalError 
+      (MkRange (MkLoc { column, line }) (MkLoc { column = column + 1, line }))
+      (if (take 1 res) == "\"" then UnterminatedString else UnexpectedChar)
 
 public export
 isUseless : Tkn -> Bool
