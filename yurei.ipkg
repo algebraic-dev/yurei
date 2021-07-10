@@ -6,13 +6,11 @@ license = "MIT"
 modules = 
     Main
   , Loc
-  , Error
   , Syntax.Lexer
   , Syntax.Parser
   , Syntax.Reader
   , Syntax.Term
   , Syntax.Tokens
-  , Error
   , Loc 
   
 main       = Main
