@@ -31,6 +31,22 @@ Show Tkn where
   show TknRSquare      = "\"]\""
   show TknWhitespace   = "WHITESPACE"
   show TknLB           = "LB"
+  
+public export
+[real] Show Tkn where
+  show (TknId dt)      = dt
+  show (TknNum dt)     = show dt
+  show (TknStr dt)     = dt
+  show (TknComment dt) = dt
+  show TknLPar         = "\"(\""
+  show TknRPar         = "\")\""
+  show TknLCurly       = "\"{\""
+  show TknRCurly       = "\"}\""
+  show TknLSquare      = "\"[\""
+  show TknRSquare      = "\"]\""
+  show TknWhitespace   = " "
+  show TknLB           = "\\n"
+  
 
 public export
 Eq Tkn where 

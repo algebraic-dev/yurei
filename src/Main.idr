@@ -4,8 +4,8 @@ import Syntax.Lexer
 import Syntax.Reader
 import Syntax.Parser
 import Syntax.Tokens
-import Error
-import PrettyError
+import Error.Data
+import Error.Pretty
 import Data.List
 import Loc 
 import System.File

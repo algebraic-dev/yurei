@@ -1,7 +1,7 @@
 module Syntax.Lexer
 
 import Loc
-import Error
+import Error.Data
 import Text.Lexer
 import Text.Lexer.Core
 import Syntax.Tokens

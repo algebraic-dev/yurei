@@ -1,4 +1,4 @@
-module Error 
+module Error.Data
 
 import Loc
 import Syntax.Tokens 

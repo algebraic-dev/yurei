@@ -3,7 +3,7 @@ module Syntax.Reader
 import Modified.Parser
 import Syntax.Tokens
 import Data.List1
-import Error
+import Error.Data
 import Loc 
 
 public export
