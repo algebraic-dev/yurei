@@ -1,7 +1,7 @@
 module Error.Data
 
-import Loc
-import Syntax.Tokens 
+import public Loc
+import public Syntax.Tokens 
 
 public export
 data ExpectType 
@@ -29,10 +29,37 @@ data LexerError
   = UnterminatedString
   | UnexpectedChar
 
+public export 
+data CapitalizedNameErr
+  = CapitalModule
+  | CapitalType
+  | CapitalADTName 
+
+public export 
+data ParserError 
+  = InvalidTopLevel String
+  | InvalidIdName String
+  | InvalidPath String
+  | ExpectedDataField
+  | ExpectedLiteral 
+  | ExpectedIdentifier
+  | ExpectedIdButGotPath
+  | ExpectedTypeDef
+  | ImpossibleParsingError
+  | NeedCapitalizedName CapitalizedNameErr
+  | NeedMinusculeName
+  | NotSupportEmptyList
+  | NotAValidPattern
+  | NotAValidType 
+  | NotAValidRecordField
+  | InvalidExpr
+  | Unreachable
+
 public export
 data ErrorType
   = LexicalError Range LexerError
   | ReadingError Range ReaderError
+  | ParsingError Range ParserError
   | EOF
   | ExpectedEOF
   | UnexpectedInternalError

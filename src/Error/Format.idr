@@ -1,8 +1,6 @@
 module Error.Format
 
 import Syntax.Lexer
-import Loc
-import Syntax.Tokens 
 import Data.String.Extra
 import Data.String
 import Data.List 
@@ -55,6 +53,7 @@ keywords = ["data", "defn", "doc", "case", "if", "else"]
 specialWords : List String 
 specialWords = ["->", "IO", "List"]
 
+-- TODO: Move to another folder
 getTknColor : Tkn -> String 
 getTknColor (TknNum     _) = "\x1b[32m" 
 getTknColor (TknStr     _) = "\x1b[33m"  

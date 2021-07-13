@@ -1,30 +1,124 @@
 module Syntax.Term 
+import public Loc
+import Data.String 
+import Data.List1
 
+formatText : String -> Nat -> String
+formatText text ident =
+  let identation = replicate ident ' ' in
+  unlines $ map ((++) identation) $ (forget $ lines text)
 
 mutual 
-  data Path a 
-    = PDot      a (a, String) (Path a)
-    | PName     a String 
+  public export 
+  record Program where 
+    constructor MkProgram 
+    fileName : String 
+    dataDefs : List DataDef 
+    defs     : List Def    
 
-  data TopLevel a 
-    = TLDecl    a (a, String) (List (Types a)) (List (Pat a)) (Expr a)
+  public export 
+  record Name where 
+    constructor MkName
+    range: Range 
+    name: String
 
-  data Expr a
-    = ELit      a (Literal a)
-    | ELambda   a (Pat a) (Expr a)
-    | ECall     a (Expr a) (Expr a)
-    | EDo       a (List (Expr a))
-    | EId       a (Path a)
 
-  data Pat a 
-    = PId       a String
+  public export 
+  record DataDef where
+    constructor DefData 
+    name : Name 
+    type : Maybe Types 
+    fields : List (Name, Maybe Types)
 
-  data Literal  a 
-    = LStr      a String 
-    | LNum      a Int 
+  public export 
+  record Record where 
+    constructor DefRec 
+    name : Name 
+    type : Maybe Types 
+    fields : List (Name, Types)
 
-  data Types a
-    = TSimple   a String
-    | TArrow    a (Types a) (Types a)
-    | TPoly     a (a, Path a) (Types a)
+  public export 
+  record Effect where 
+    constructor DefEff
+    name : Name 
+    type : Maybe Types 
+    effects : List (Name, Types)
+
+  public export
+  record Def where 
+    constructor Define 
+    name : Name 
+    type : Maybe Types
+    value : Expr
     
+  public export 
+  record RecordDef where
+    constructor DefRecord 
+    name : Name 
+    type : Maybe Types 
+    fields : List (Name, Types)
+
+  public export
+  data Path 
+    = PDot      Range Name Path
+    | PName     Range String 
+
+  public export
+  data Expr 
+    = ELit      Range Literal
+    | ELambda   Range Name Expr
+    | ECall     Range Expr Expr
+    | EDo       Range (List Expr)
+    | EId       Path
+
+  public export
+  data Pat 
+    = PaId       Name
+    | PaLit      Range Literal
+    | PaData     Range Path (List Pat)
+    | PaList     Range (List Pat)
+
+  public export
+  data Literal 
+    = LStr      Range String 
+    | LInt      Range Int 
+
+  public export
+  data Types
+    = TSimple   Range String
+    | TArrow    Range Types Types
+    | TPoly     Range Path Types
+    | TVar      Range String 
+  
+  Show Name where 
+    show (MkName range n) = n
+  
+  Show Path where 
+    show (PDot r name path) = (show name) ++ "." ++ (show path)
+    show (PName r str) = str 
+
+  Show Literal where 
+    show (LStr r str) = "\"" ++ str ++ "\""
+    show (LInt r int) = show int 
+  
+  Show Expr where 
+    show (ELit r lit) = show lit 
+    show (ELambda r arg expr) = "λ" ++ (show arg) ++ "." ++ (show expr)
+    show (EDo r exprs) = "Do\n" ++ formatText (unlines $ map show exprs) 2
+    show (ECall r a b) = concat ["(", show a, show b,")"]
+    show (EId n) = show n
+
+  Show Pat where 
+    show (PaId n) = show n 
+    show (PaLit r l) = show l 
+    show (PaData r path pats) = "(" ++ show path ++ ", " ++ (concatMap ((\a => a ++ ",") . show) pats)  ++ ")"
+    show (PaList r list) = "[" ++ (concatMap ((\a => a ++ ", ") . show) list) ++ "]"
+
+  Show Types where 
+    show (TSimple r s) = s 
+    show (TArrow r a b) = show a ++ " -> " ++ show b 
+    show (TPoly r path n) = "(" ++ (show path) ++ " " ++ show n ++ ")"
+    show (TVar a s) = s
+
+  Show Def where 
+    show (Define name type value) = concat ["Define: ", show name, "(", show type , ") ", " (", show value,  ")"]

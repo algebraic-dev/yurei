@@ -85,8 +85,6 @@ getReaderError err range (Expected expect tkn) =
   let message = getExpectTypeMessage expect tkn in 
   commonErrorMessage err (Just range) message
   
-
-
 -- The entry point of the error messages
 
 getMessage : ErrInfo -> ErrorType -> String 
