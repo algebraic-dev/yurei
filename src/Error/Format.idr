@@ -21,7 +21,8 @@ insertInLines (start, end) mainLine text =
 public export
 getRange : ErrorType -> Maybe Range 
 getRange (LexicalError  r _) = Just r 
-getRange (ReadingError  r _) = Just r
+getRange (ReadingError  r _) = Just r 
+getRange (ParsingError  r _) = Just r
 getRange _                   = Nothing
 
 space : Nat -> String 

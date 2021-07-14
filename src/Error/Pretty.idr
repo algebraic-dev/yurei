@@ -72,7 +72,7 @@ getExpectTypeMessage expect actual =
     ExpectStr => expectMessage ["a text (string)"] (show @{real} actual)
     ExpectInt => expectMessage ["a integer number"] (show @{real} actual)
     Unknown   => concat ["Unexpected ", (show @{real} actual)]
-    TknEOF    => concat ["Unexpected token \"", (show @{real} actual), "\" try to add some top level structure (link here) instead of this."]
+    TknEOF    => concat ["Unexpected \"", (show @{real} actual), "\" try to add some top level structure (link here) instead of this."]
 
 -- Reader error messages 
 
@@ -84,12 +84,52 @@ getReaderError err range (NotClosed kind) =
 getReaderError err range (Expected expect tkn) = 
   let message = getExpectTypeMessage expect tkn in 
   commonErrorMessage err (Just range) message
-  
+
+  -- Reader error messages 
+
+getParserError : ErrInfo -> Range -> ParserError -> String 
+getParserError err range (InvalidTopLevel str) = 
+  commonErrorMessage err (Just range) ("It's the wrong structure for the " ++ str ++ " structure")
+
+getParserError err range (InvalidIdName str) = 
+  commonErrorMessage err (Just range) ("The name '" ++ str ++ "' is invalid as a identifier for this structure!")
+
+getParserError err range (InvalidPath str) = 
+  commonErrorMessage err (Just range) ("Expected a path but instead got '" ++ str ++ "'")
+
+getParserError err range (ExpectedDataField) = 
+  commonErrorMessage err (Just range) ("Expected a field for the data structure but got something that is not it! (read the link to read more about data structures)")
+
+getParserError err range (ExpectedLiteral) = 
+  commonErrorMessage err (Just range) ("Expected a literal like 1 or \"some text with commas\"")
+
+getParserError err range (ExpectedIdButGotPath) = 
+  commonErrorMessage err (Just range) ("Expected a single identifier but instead got a path!")
+
+getParserError err range (ExpectedTypeDef) = 
+  commonErrorMessage err (Just range) ("Expected a type definition")
+
+getParserError err range (NeedCapitalizedName kind) = 
+  let structure = case kind of 
+                    CapitalModule => "module"
+                    CapitalType => "type"
+                    CapitalADTName => "data name"
+  in
+  commonErrorMessage err (Just range) ("Expected a capitalized name for the " ++ structure ++ " definition")
+
+getParserError err range (NeedMinusculeName) = 
+  commonErrorMessage err (Just range) ("Expected a minuscule name for this structure")
+
+getParserError err range other = 
+  commonErrorMessage err (Just range) "Sorry i dont have a good parser error message for it"
+
 -- The entry point of the error messages
 
 getMessage : ErrInfo -> ErrorType -> String 
 getMessage errInfo (LexicalError range err) = getLexerError errInfo range err
 getMessage errInfo (ReadingError range err) = getReaderError errInfo range err
+getMessage errInfo (ParsingError range err) = getParserError errInfo range err
+
 getMessage errInfo _ = commonErrorMessage errInfo Nothing "We dont have a good error message for it now lol sorry"
 
 public export

@@ -54,6 +54,7 @@ data ParserError
   | NotAValidRecordField
   | InvalidExpr
   | Unreachable
+  | NotAllCasesHaveCond
 
 public export
 data ErrorType
