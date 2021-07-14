@@ -12,9 +12,10 @@ mutual
   public export 
   record Program where 
     constructor MkProgram 
-    fileName : String 
-    dataDefs : List DataDef 
-    defs     : List Def    
+    fileName  : String 
+    dataDefs  : List DataDef 
+    defs      : List Def   
+    recordDef : List RecordDef 
 
   public export 
   record Name where 
@@ -22,27 +23,12 @@ mutual
     range: Range 
     name: String
 
-
   public export 
   record DataDef where
     constructor DefData 
     name : Name 
     type : Maybe Types 
     fields : List (Name, Maybe Types)
-
-  public export 
-  record Record where 
-    constructor DefRec 
-    name : Name 
-    type : Maybe Types 
-    fields : List (Name, Types)
-
-  public export 
-  record Effect where 
-    constructor DefEff
-    name : Name 
-    type : Maybe Types 
-    effects : List (Name, Types)
 
   public export
   record Def where 
@@ -69,6 +55,7 @@ mutual
     | ELambda   Range Name Expr
     | ECall     Range Expr Expr
     | EDo       Range (List Expr)
+    | ECase     Range (List (Expr, Expr))
     | EId       Path
 
   public export
@@ -103,9 +90,10 @@ mutual
   
   Show Expr where 
     show (ELit r lit) = show lit 
-    show (ELambda r arg expr) = "λ" ++ (show arg) ++ "." ++ (show expr)
-    show (EDo r exprs) = "Do\n" ++ formatText (unlines $ map show exprs) 2
-    show (ECall r a b) = concat ["(", show a, show b,")"]
+    show (ELambda r arg expr) = "(λ [" ++ (show arg) ++ "] " ++ (show expr) ++ ")"
+    show (EDo r exprs) = "(Do\n" ++ formatText (unlines $ map show exprs) 2 ++ ")"
+    show (ECase r exprs) = "(case\n  " ++ formatText (unlines $ map show exprs) 2 ++ ")"
+    show (ECall r a b) = concat ["(", show a, " ", show b,")"]
     show (EId n) = show n
 
   Show Pat where 
@@ -120,5 +108,45 @@ mutual
     show (TPoly r path n) = "(" ++ (show path) ++ " " ++ show n ++ ")"
     show (TVar a s) = s
 
+  Show DataDef where 
+    show (DefData name type fields) = 
+      "Data: \n  " ++ (formatText (concat [
+        "Name: \n    ", show name, "\n",
+        "Type: \n    ", show type, "\n",
+        "Fields: \n", (formatText (
+          unlines $ map (\(name, type) => concat ["(", show name,":",show type, ")"]) fields
+        ) 2)
+      ]
+      ) 2)
+
+  Show RecordDef where 
+    show (DefRecord name type fields) = 
+      "Record: \n" ++ (formatText (concat [
+        "Name:\n    ", show name, "\n",
+        "Type: \n    ", show type, "\n",
+        "Fields: \n", (formatText (
+          unlines $ map (\(name, type) => concat ["(", show name," : ",show type, ")"]) fields
+        ) 2)
+      ]
+      ) 2)
+
   Show Def where 
-    show (Define name type value) = concat ["Define: ", show name, "(", show type , ") ", " (", show value,  ")"]
+    show (Define name type expr) = 
+      "Def: \n" ++ (formatText (concat [
+        "Name: \n    ", show name, "\n",
+        "Type: \n    ", show type, "\n",
+        "Value: \n", (formatText (show expr) 2)]
+      ) 2)
+
+  public export
+  Show Program where 
+    show (MkProgram name datad defs recs) = 
+      "Program: \n" ++ (formatText (concat [
+        "Datas: \n", (formatText (show datad) 2), "\n",
+        "Defs: \n", (formatText (show defs) 2), "\n",
+        "Records: \n", (formatText (show recs) 2)]
+      ) 2)
+
+  
+
+  

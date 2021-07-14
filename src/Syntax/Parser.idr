@@ -144,7 +144,18 @@ parsePat expr@(TList r (name :: tl)) =
 
 parsePat expr = Left (getRange expr, NotAValidPattern)
 
+
 mutual 
+  pairUp : List TermExpr -> Result (List (Expr, Expr))
+  pairUp (a::b::tl) = do
+    pA <- parseExpr a 
+    pB <- parseExpr  b
+    paired <- pairUp tl
+    pure ((pA, pB) :: paired)
+
+  pairUp [one] = Left (getRange one, NotAllCasesHaveCond)
+  pairUp [] = Right [] 
+
   parseExprWithRange : TermExpr -> Result (Range, Expr)
   parseExprWithRange term = do
     res <- parseExpr term 
@@ -156,12 +167,16 @@ mutual
     body <- traverse parseExpr tl
     pure $ EDo range body
 
+  parseExpr (TList range ((TId r_ "case") :: cases)) = do 
+    pairs <- pairUp cases 
+    pure $ ECase range pairs
+    
+
   parseExpr (TList range (TId r_ "lambda" :: hd :: tl)) = do 
     arg  <- unwrapId hd >>= uncurry parseUniqueId
     body <- traverse parseExpr tl 
-    pure $ ELambda range arg (EDo range body)
+    pure $ ELambda range arg (EDo range body) 
 
-  -- [a,b,c] ECall (ECall (a,b), c)
   parseExpr (TList range (fst :: params)) = do 
     fstP  <- parseExpr fst  
     body <- traverse (parseExprWithRange) params
@@ -260,15 +275,15 @@ parseTopLevel expr program =
             res <- parseDef range tl 
             pure $ (record { defs $= ((::) res) } program)
           "record" => do 
-            res <- parseDef range tl 
-            pure $ (record { defs $= ((::) res) } program)
+            res <- parseRecord range tl 
+            pure $ (record { recordDef $= ((::) res) } program)
           name => Left $ (dataName, InvalidTopLevel name)
       other => Left $ (getRange expr, Unreachable)
 
 public export
 parseProgram : String -> List TermExpr -> Either ErrorType Program 
 parseProgram name exprs = 
-  let program = MkProgram name [] [] in
+  let program = MkProgram name [] [] [] in
   let res = foldl (\program, cur => program >>= (parseTopLevel cur)) (Right program) exprs in 
   case res of 
     Left (range, err) => Left $ ParsingError range err 
