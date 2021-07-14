@@ -1,14 +1,16 @@
 IDRIS2 = ~/.idris2/bin/idris2
 
-test:
+test: build
 	${IDRIS2} --build tests/tests.ipkg
 	cd tests && ./build/exec/runtests .
 
 build:
-	${IDRIS2}  --build yurei.ipkg
+	@${IDRIS2}  --build yurei.ipkg
 
-run: build 
-	./build/exec
+run:
+	${IDRIS2}  --build yurei.ipkg
+	@clear
+	@./build/exec/main
 
 install: build
 	 ${IDRIS2} --install yurei.ipkg
