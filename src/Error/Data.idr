@@ -34,6 +34,7 @@ data CapitalizedNameErr
   = CapitalModule
   | CapitalType
   | CapitalADTName 
+  | CapitalDataConstructor
 
 public export 
 data ParserError 

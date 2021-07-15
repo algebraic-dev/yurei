@@ -55,7 +55,7 @@ mutual
     | ELambda   Range Name Expr
     | ECall     Range Expr Expr
     | EDo       Range (List Expr)
-    | ECase     Range (List (Expr, Expr))
+    | ECase     Range Expr (List (Pat, Expr))
     | EId       Path
 
   public export
@@ -92,7 +92,7 @@ mutual
     show (ELit r lit) = show lit 
     show (ELambda r arg expr) = "(λ [" ++ (show arg) ++ "] " ++ (show expr) ++ ")"
     show (EDo r exprs) = "(Do\n" ++ formatText (unlines $ map show exprs) 2 ++ ")"
-    show (ECase r exprs) = "(case\n  " ++ formatText (unlines $ map show exprs) 2 ++ ")"
+    show (ECase r cond exprs) = "(case " ++ (show cond) ++ "\n" ++ formatText (unlines $ map show exprs) 2 ++ ")"
     show (ECall r a b) = concat ["(", show a, " ", show b,")"]
     show (EId n) = show n
 

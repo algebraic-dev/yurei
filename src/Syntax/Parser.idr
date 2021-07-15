@@ -55,17 +55,23 @@ parsePathRaw checkMiddle checkLast range str =
             Left err => Left $ (finalRange, err)
         _ => Left $ (range, ImpossibleParsingError) 
 
-parseTypePath : Range -> String -> Result Path 
-parseTypePath =
+parseCapitalType : CapitalizedNameErr -> Range -> String -> Result Path 
+parseCapitalType err =
   parsePathRaw
     (isCapitalStr CapitalModule) 
-    (isCapitalStr CapitalType) 
+    (isCapitalStr err) 
   where 
     isCapitalStr : CapitalizedNameErr -> String -> Either ParserError String
     isCapitalStr err str = 
       if isCapitalized str
         then Right str 
         else Left (NeedCapitalizedName err)
+
+parseTypePath : Range -> String -> Result Path 
+parseTypePath = parseCapitalType CapitalType
+
+parseDCPath : Range -> String -> Result Path 
+parseDCPath = parseCapitalType CapitalDataConstructor
 
 parsePath : Range -> String -> Result Path 
 parsePath = parsePathRaw (Right) (Right)
@@ -132,23 +138,22 @@ parseTypeDef expr = Left (getRange expr, ExpectedTypeDef)
 parsePat : TermExpr -> Result Pat
 parsePat expr@(TStr r n) = PaLit r <$> parseLiteral expr
 parsePat expr@(TInt r n) = PaLit r <$> parseLiteral expr
-parsePat expr@(TId r name) = PaId <$> parseUniqueType r name
+parsePat expr@(TId r name) = PaId <$> parseUniqueId r name
 parsePat expr@(TList r (name :: tl)) =
   case name of 
     (TId nameRange "list") => PaList r <$> (traverse parsePat tl) 
     (TId range str) => do 
-      path <- parseTypePath range str
+      path <- parseDCPath range str
       ls <- traverse parsePat tl
       pure $ PaData range path ls
     _ => Left (r, NotAValidPattern)
 
 parsePat expr = Left (getRange expr, NotAValidPattern)
 
-
 mutual 
-  pairUp : List TermExpr -> Result (List (Expr, Expr))
+  pairUp : List TermExpr -> Result (List (Pat, Expr))
   pairUp (a::b::tl) = do
-    pA <- parseExpr a 
+    pA <- parsePat a 
     pB <- parseExpr  b
     paired <- pairUp tl
     pure ((pA, pB) :: paired)
@@ -167,11 +172,11 @@ mutual
     body <- traverse parseExpr tl
     pure $ EDo range body
 
-  parseExpr (TList range ((TId r_ "case") :: cases)) = do 
+  parseExpr (TList range ((TId r_ "case") :: cond :: cases)) = do 
+    cond <- parseExpr cond
     pairs <- pairUp cases 
-    pure $ ECase range pairs
-    
-
+    pure $ ECase range cond pairs
+  
   parseExpr (TList range (TId r_ "lambda" :: hd :: tl)) = do 
     arg  <- unwrapId hd >>= uncurry parseUniqueId
     body <- traverse parseExpr tl 

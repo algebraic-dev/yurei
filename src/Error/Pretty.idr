@@ -114,6 +114,7 @@ getParserError err range (NeedCapitalizedName kind) =
                     CapitalModule => "module"
                     CapitalType => "type"
                     CapitalADTName => "data name"
+                    CapitalDataConstructor => "data constructor"
   in
   commonErrorMessage err (Just range) ("Expected a capitalized name for the " ++ structure ++ " definition")
 
@@ -129,7 +130,6 @@ getMessage : ErrInfo -> ErrorType -> String
 getMessage errInfo (LexicalError range err) = getLexerError errInfo range err
 getMessage errInfo (ReadingError range err) = getReaderError errInfo range err
 getMessage errInfo (ParsingError range err) = getParserError errInfo range err
-
 getMessage errInfo _ = commonErrorMessage errInfo Nothing "We dont have a good error message for it now lol sorry"
 
 public export
