@@ -1,14 +1,24 @@
 module Main 
 
 import Error.Data
+import Error.Pretty
+
 import Syntax.Lexer
 import Syntax.Reader
 import Syntax.Parser
 import Syntax.Tokens
-import Error.Pretty
+import Syntax.Term
+
+import Typing.Infer
+
 import Data.List
 import Loc 
 import System.File
+
+import REPL
+import Control.App
+import Control.App.Console
+import Control.App.FileIO
 
 compile : String -> String -> IO ()
 compile fileName contents = 
@@ -17,7 +27,11 @@ compile fileName contents =
               >>= (parseProgram "teste.lsp") in
   case res of 
     Left res => print $ (MkErrorData fileName contents res) 
-    Right res => print res
+    Right (MkProgram s t d r) => 
+      let res = traverse runInference d in 
+      case res of 
+        Right e => print (map snd e) 
+        Left e  => print e
 
 main : IO ()
 main = do
