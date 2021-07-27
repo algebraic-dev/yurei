@@ -22,3 +22,6 @@ public export
 mixRange : Range -> Range -> Range
 mixRange (MkRange start _) (MkRange _ end) = (MkRange start end)
 
+public export
+emptyRange : Range 
+emptyRange = MkRange (MkLoc 0 0) (MkLoc 0 0)
