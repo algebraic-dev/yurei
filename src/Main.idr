@@ -15,7 +15,6 @@ import Data.List
 import Loc 
 import System.File
 
-import REPL
 import Control.App
 import Control.App.Console
 import Control.App.FileIO
