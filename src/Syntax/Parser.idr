@@ -102,8 +102,10 @@ parseTypes : TermExpr -> Result Types
 parseTypes (TList r (TId r_ "->" :: hd :: tl)) = do
   head <- parseTypes hd
   res <- traverse (\t => parseTypes t >>= \res => pure (getRange t, res)) tl 
-  let list1 = (getRange hd, head) ::: res
-  pure $ foldl (\acc, cur => TArrow (fst cur) (snd cur) acc) (snd $ last list1) (init list1)
+  let ((_, hdI) ::: tlI) = reverse $ (getRange hd, head) ::: res
+  if length res /= 0
+    then pure $ foldl (\acc, cur => TArrow (fst cur) (snd cur) acc) hdI tlI
+    else Left $ (r, ArrowWithOneArg)
 
 parseTypes (TList r [TId range name, type]) = do 
   name <- parseTypePath range name 
@@ -139,6 +141,15 @@ parsePat : TermExpr -> Result Pat
 parsePat expr@(TStr r n) = PaLit r <$> parseLiteral expr
 parsePat expr@(TInt r n) = PaLit r <$> parseLiteral expr
 parsePat expr@(TId r name) = PaId <$> parseUniqueId r name
+
+parsePat expr@(TList r ([TId r_ ":", a, b])) = do 
+  a <- parsePat a 
+  b <- parsePat b 
+  pure $ PaHdTl r a b
+
+parsePat expr@(TList r [TId r_ "list"]) = pure $ PaList r []
+parsePat expr@(TList r [other]) = parsePat other 
+
 parsePat expr@(TList r (name :: tl)) =
   case name of 
     (TId nameRange "list") => PaList r <$> (traverse parsePat tl) 
@@ -168,19 +179,24 @@ mutual
 
   parseExpr : TermExpr -> Result Expr
 
-  parseExpr (TList range ((TId r_ "do") :: tl)) = do 
-    body <- traverse parseExpr tl
-    pure $ EDo range body
+  parseExpr (TList range ((TId r_ "do") :: tl)) = 
+    pure $ EDo range !(traverse parseExpr tl)
 
   parseExpr (TList range ((TId r_ "case") :: cond :: cases)) = do 
     cond <- parseExpr cond
     pairs <- pairUp cases 
     pure $ ECase range cond pairs
   
-  parseExpr (TList range (TId r_ "lambda" :: hd :: tl)) = do 
+  parseExpr (TList range (TId r_ "fn" :: hd :: tl)) = do 
     arg  <- unwrapId hd >>= uncurry parseUniqueId
     body <- traverse parseExpr tl 
     pure $ ELambda range arg (EDo range body) 
+
+  parseExpr (TList range [TId r_ "let", TId nameRange name, value, expr]) = do 
+    name <- parseUniqueId nameRange name 
+    val <- parseExpr value 
+    expr <- parseExpr expr 
+    pure $ ELet range name val expr
 
   parseExpr (TList range (fst :: params)) = do 
     fstP  <- parseExpr fst  
@@ -196,14 +212,13 @@ mutual
 
 -- Data def 
 
-parseDataField : TermExpr -> Result (Name, Maybe Types)
-parseDataField (TList range [TId ranged name, typed]) = do
+parseDataField : TermExpr -> Result (Name, List Types)
+parseDataField (TList range (TId ranged name :: typed)) = do
     named <- parseCapitalized ranged name
-    typed <- parseTypes typed
-    pure $ (named, Just typed)
+    typed <- traverse parseTypes typed
+    pure $ (named, typed)
 
-parseDataField (TList range [name@(TId r n)]) = parseDataField name
-parseDataField (TId range name) = (\t => (t, Nothing)) <$> parseCapitalized range name
+parseDataField (TId range name) = (\t => (t, [])) <$> parseCapitalized range name
 parseDataField expr = Left (getRange expr, ExpectedDataField)
 
 parseDataDef : Range -> List TermExpr -> Result DataDef 
@@ -233,6 +248,13 @@ parseDef range n = Left (range, InvalidTopLevel "def")
 -- Defn 
 
 parseDefFn : Range -> List TermExpr -> Result Def 
+
+parseDefFn range [TId nameRange name, body] = do 
+  named <- parseUniqueId nameRange name
+  value <- parseExpr body
+  pure $ (Define named Nothing value)
+
+-- TODO: Improve to not duplicate this shit
 parseDefFn range ((TId nameRange name) :: type :: (TList argRange (TId r "list" :: args)) :: body) = do 
   named <- parseUniqueId nameRange name
   kind <- parseTypes type 
@@ -242,10 +264,14 @@ parseDefFn range ((TId nameRange name) :: type :: (TList argRange (TId r "list" 
   let lambda = foldl (\acc, cur => ELambda range cur acc) (bodyRes) (reverse args)
   pure $ (Define named (Just kind) lambda)
 
-parseDefFn range [TId nameRange name, body] = do 
+parseDefFn range ((TId nameRange name) :: (TList argRange (TId r "list" :: args)) :: body) = do 
   named <- parseUniqueId nameRange name
-  value <- parseExpr body
-  pure $ (Define named Nothing value)
+  bodyRes <- (EDo range) <$> traverse parseExpr body
+  unwrapIds <- traverse (unwrapId) args
+  args <- traverse (uncurry parseUniqueId) unwrapIds 
+  let lambda = foldl (\acc, cur => ELambda range cur acc) (bodyRes) (reverse args)
+  pure $ (Define named Nothing lambda)
+
 
 parseDefFn range n = Left (range, InvalidTopLevel "defn")
 

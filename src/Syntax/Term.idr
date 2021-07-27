@@ -6,9 +6,10 @@ import Data.List1
 formatText : String -> Nat -> String
 formatText text ident =
   let identation = replicate ident ' ' in
-  unlines $ map ((++) identation) $ (forget $ lines text)
+  unlines $ map (++ identation) $ (lines text)
 
 mutual 
+
   public export 
   record Program where 
     constructor MkProgram 
@@ -28,7 +29,7 @@ mutual
     constructor DefData 
     name : Name 
     type : Maybe Types 
-    fields : List (Name, Maybe Types)
+    fields : List (Name, List Types)
 
   public export
   record Def where 
@@ -56,6 +57,7 @@ mutual
     | ECall     Range Expr Expr
     | EDo       Range (List Expr)
     | ECase     Range Expr (List (Pat, Expr))
+    | ELet      Range Name Expr Expr
     | EId       Path
 
   public export
@@ -64,6 +66,7 @@ mutual
     | PaLit      Range Literal
     | PaData     Range Path (List Pat)
     | PaList     Range (List Pat)
+    | PaHdTl     Range Pat Pat
 
   public export
   data Literal 
@@ -80,6 +83,7 @@ mutual
   Show Name where 
     show (MkName range n) = n
   
+  public export
   Show Path where 
     show (PDot r name path) = (show name) ++ "." ++ (show path)
     show (PName r str) = str 
@@ -95,16 +99,18 @@ mutual
     show (ECase r cond exprs) = "(case " ++ (show cond) ++ "\n" ++ formatText (unlines $ map show exprs) 2 ++ ")"
     show (ECall r a b) = concat ["(", show a, " ", show b,")"]
     show (EId n) = show n
+    show (ELet r name val expr) = concat ["(let ", show name, "=", show val, "\n  ", show expr]
 
   Show Pat where 
     show (PaId n) = show n 
     show (PaLit r l) = show l 
     show (PaData r path pats) = "(" ++ show path ++ ", " ++ (concatMap ((\a => a ++ ",") . show) pats)  ++ ")"
     show (PaList r list) = "[" ++ (concatMap ((\a => a ++ ", ") . show) list) ++ "]"
-
+    show (PaHdTl r a b) = concat ["(", show a, "::", show b, ")"]
+    
   Show Types where 
     show (TSimple r s) = s 
-    show (TArrow r a b) = show a ++ " -> " ++ show b 
+    show (TArrow r a b) = "(" ++ show a ++ " -> " ++ show b ++ ")" 
     show (TPoly r path n) = "(" ++ (show path) ++ " " ++ show n ++ ")"
     show (TVar a s) = s
 
