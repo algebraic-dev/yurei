@@ -121,6 +121,9 @@ getParserError err range (NeedCapitalizedName kind) =
 getParserError err range (NeedMinusculeName) = 
   commonErrorMessage err (Just range) ("Expected a minuscule name for this structure")
 
+getParserError err range (ArrowWithOneArg) = 
+  commonErrorMessage err (Just range) ("The arrow type not supports one type. \nwe cannot transform one type into nothing")
+
 getParserError err range other = 
   commonErrorMessage err (Just range) "Sorry i dont have a good parser error message for it"
 
@@ -137,7 +140,7 @@ Show ErrorData where
   show (MkErrorData file source error) = 
     case (getRange error) of 
       Just range@(MkRange (MkLoc c mainLine) _) => 
-        let lined = forget $ lines source
+        let lined = lines source
             errRange = getErrorLineRange lined range
             line = (getIndex (cast mainLine) lined "")
             info = MKRangedErrInfo lined line file errRange range

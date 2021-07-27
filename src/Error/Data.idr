@@ -56,6 +56,7 @@ data ParserError
   | InvalidExpr
   | Unreachable
   | NotAllCasesHaveCond
+  | ArrowWithOneArg
 
 public export
 data ErrorType

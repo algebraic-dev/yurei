@@ -155,21 +155,26 @@ formatLines range (start, end) mainLine =
 public export
 formatHeader : String -> String    
 formatHeader header = 
-    let  (title ::: tl) = lines header in
-      concat ["\n", errorTag, " ", title, "\n", unlines $ map ((space 9) ++) tl]
+    case lines header of
+        (title :: tl) => concat ["\n", errorTag, " ", title, "\n", unlines $ map ((space 10) ++) tl, if (length tl > 0) then "\n" else ""]
+        _ => concat ["\n", errorTag, "Empty error"]
     where 
       errorTag : String 
       errorTag = concat [space 2, Bg.red, " ERROR ", Deco.reset]
 
 public export
 fileHeader : Range -> String -> String 
-fileHeader (MkRange (MkLoc col line) _) file = 
+fileHeader (MkRange (MkLoc col line) (MkLoc colEnd lineEnd)) file = 
   let text = 
     concat ["on ./"
            , file, ":"
            , (cast (line+1))
-           , ":",
-            (cast (col + 1))] in
+           , ":"
+           , (cast (col + 1))
+           , "~"
+           , (cast (lineEnd+1))
+           , ":"
+           , (cast (colEnd + 1))] in
   concat [ space 4
          , Deco.dim
          , Fg.cyan
